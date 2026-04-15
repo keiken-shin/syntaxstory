@@ -15,3 +15,48 @@ The name "SyntaxStory" captures the cognitive dissonance of programming: **Synta
 - **The Problem:** Codebases are silent, intimidating, and difficult to understand; reading raw syntax at scale becomes overwhelming quickly.
 - **The Solution:** **SyntaxStory** breathes life into code, turning static repositories into engaging multi-modal narratives (video, audio, text).
 - **The Promise:** *Bridging the gap between logic and language.*
+
+## Getting Started
+
+### Backend setup (FastAPI)
+
+From the project root:
+
+1. Create and activate a virtual environment in `syntax`:
+    ```bash
+    python -m venv syntax/.venv
+    # Windows
+    .\syntax\.venv\Scripts\activate
+    # Linux
+    source .\syntax\.venv\Scripts\activate
+    ```
+2. Install dependencies:
+   ```bash
+   pip install -r syntax/requirements.txt
+   ```
+3. Run the API (from `syntax` directory):
+    ```bash
+    cd syntax
+    fastapi dev
+
+    # Fallback: 
+    python -m uvicorn app.main:app --reload
+    ```
+
+The FastAPI CLI entrypoint is configured in `syntax/pyproject.toml`.
+
+### Run tests
+
+    ```bash
+    cd syntax
+    python -m pytest -q`
+    ```
+
+
+### Health check endpoint
+
+Once running, verify:
+
+- `GET http://127.0.0.1:8000/api/health`
+- Expected response: `{"status":"ok"}`
+

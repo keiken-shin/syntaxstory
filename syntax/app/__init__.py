@@ -1,0 +1,1 @@
+"""SyntaxStory backend application package."""
