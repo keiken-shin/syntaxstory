@@ -53,6 +53,19 @@ The FastAPI CLI entrypoint is configured in `syntax/pyproject.toml`.
     ```
 
 
+### Provider configuration
+
+The app uses `syntax/storage/provider_config.json` as its live config store (gitignored — may contain API keys and local model choices).
+
+On first run the file is **auto-generated** from hardcoded defaults. To start from a custom baseline:
+
+```bash
+cp syntax/storage/provider_config.template.json syntax/storage/provider_config.json
+# Edit provider_config.json with your keys / preferred models
+```
+
+The committed template (`provider_config.template.json`) shows the full default shape with all secrets set to `null`.
+
 ### Health check endpoint
 
 Once running, verify:
@@ -60,3 +73,11 @@ Once running, verify:
 - `GET http://127.0.0.1:8000/api/health`
 - Expected response: `{"status":"ok"}`
 
+### Config endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/config/providers` | List all providers (secrets redacted) |
+| `GET` | `/api/config/providers/{id}` | Single provider config |
+| `PATCH` | `/api/config/provider` | Update model / base_url / api_key |
+| `PUT` | `/api/config/provider/active` | Switch the active provider |

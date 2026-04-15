@@ -1,0 +1,42 @@
+{
+  "active_provider": "gemini",
+  "fallback_provider": "openai",
+  "providers": {
+    "gemini": {
+      "provider_id": "gemini",
+      "enabled": true,
+      "model": "gemini-2.5-pro",
+      "base_url": null,
+      "secrets": {
+        "api_key": null
+      }
+    },
+    "openai": {
+      "provider_id": "openai",
+      "enabled": true,
+      "model": "gpt-4o-mini",
+      "base_url": "https://api.openai.com/v1",
+      "secrets": {
+        "api_key": null
+      }
+    },
+    "anthropic": {
+      "provider_id": "anthropic",
+      "enabled": true,
+      "model": "claude-3-7-sonnet-latest",
+      "base_url": "https://api.anthropic.com",
+      "secrets": {
+        "api_key": null
+      }
+    },
+    "ollama": {
+      "provider_id": "ollama",
+      "enabled": true,
+      "model": "llama3.2",
+      "base_url": "http://localhost:11434",
+      "secrets": {
+        "api_key": null
+      }
+    }
+  }
+}
