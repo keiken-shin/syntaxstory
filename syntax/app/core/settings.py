@@ -7,6 +7,7 @@ class AppSettings(BaseSettings):
     app_name: str = "SyntaxStory API"
     app_version: str = "0.1.0"
     environment: str = "development"
+    provider_config_path: str = "storage/provider_config.json"
 
     model_config = SettingsConfigDict(
         env_file=".env",
