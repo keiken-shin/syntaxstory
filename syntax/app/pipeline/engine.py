@@ -23,9 +23,9 @@ class PipelineEngine:
     
     def __init__(self, store: JobStore):
         self.store = store
-        self.handlers: Dict[PipelineStep, Callable[[Job], Awaitable[None]]] = {}
+        self.handlers: Dict[PipelineStep, Callable[[Job, 'PipelineEngine'], Awaitable[None]]] = {}
 
-    def register_step(self, step: PipelineStep, handler: Callable[[Job], Awaitable[None]]) -> None:
+    def register_step(self, step: PipelineStep, handler: Callable[[Job, 'PipelineEngine'], Awaitable[None]]) -> None:
         """Register an async handler function for a specific pipeline step."""
         self.handlers[step] = handler
 
@@ -59,7 +59,7 @@ class PipelineEngine:
                 logger.info(f"Job {job.id} starting step: {current_step}")
                 
                 # Execute the discrete step logic
-                await handler(job)
+                await handler(job, self)
                 
                 # Progress state
                 try:

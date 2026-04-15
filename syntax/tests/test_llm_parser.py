@@ -30,11 +30,11 @@ def test_parse_yaml_safely_invalid_yaml():
         parse_yaml_safely(text)
     assert "YAML parser error" in str(exc.value)
 
-def test_parse_yaml_safely_not_dict():
-    text = "```yaml\n- item 1\n- item 2\n```"
+def test_parse_yaml_safely_not_dict_or_list():
+    text = "```yaml\njust a string\n```"
     with pytest.raises(YamlParsingError) as exc:
         parse_yaml_safely(text)
-    assert "YAML root must be a dictionary" in str(exc.value)
+    assert "YAML root must be a dictionary/object/list" in str(exc.value)
 
 def test_parse_yaml_safely_empty():
     with pytest.raises(YamlParsingError) as exc:

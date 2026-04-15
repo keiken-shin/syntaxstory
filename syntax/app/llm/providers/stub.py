@@ -22,9 +22,23 @@ class StubProvider:
         self.capabilities = capabilities or ProviderCapabilities()
 
     def generate(self, request: GenerateRequest) -> GenerateResponse:
+        content = f"[{self.provider_id}] provider stub response for: {request.prompt}"
+        
+        # If the prompt explicitly asks for yaml output structure, return a valid fake wrapper
+        if "```yaml" in request.prompt:
+            if "relationships:" in request.prompt:
+                # Stub out relationships analysis yaml
+                content = '''```yaml\nsummary: |\n  Test stub summary.\nrelationships:\n  - from_abstraction: 0\n    to_abstraction: 0\n    label: "Uses"\n```'''
+            elif "- name:" in request.prompt:
+                # Stub out Identify Abstractions yaml
+                content = '''```yaml\n- name: "Stub Abstraction"\n  description: "A stub."\n  file_indices:\n    - 0\n```'''
+            else:
+                # Generic yaml stub
+                content = '''```yaml\nstub: true\n```'''
+                
         return GenerateResponse(
             provider=self.provider_id,
-            content=f"[{self.provider_id}] provider stub response for: {request.prompt}",
+            content=content,
         )
 
     def test_connection(self, config: "ProviderConfig") -> ConnectionTestResult:

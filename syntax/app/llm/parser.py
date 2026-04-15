@@ -31,7 +31,7 @@ def extract_yaml_from_text(text: str) -> str:
     return text
 
 
-def parse_yaml_safely(text: str) -> Dict[str, Any]:
+def parse_yaml_safely(text: str) -> Any:
     """
     Extracts and parses a YAML string into a Python dictionary.
     Raises YamlParsingError if the result is invalid or parsing fails.
@@ -48,9 +48,9 @@ def parse_yaml_safely(text: str) -> Dict[str, Any]:
         # Using safe_load to prevent arbitrary code execution
         parsed = yaml.safe_load(extracted_yaml)
         
-        if not isinstance(parsed, dict):
+        if not isinstance(parsed, (dict, list)):
             raise YamlParsingError(
-                f"YAML root must be a dictionary/object, got {type(parsed).__name__}.", 
+                f"YAML root must be a dictionary/object/list, got {type(parsed).__name__}.", 
                 text
             )
             

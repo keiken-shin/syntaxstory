@@ -21,7 +21,7 @@ async def test_pipeline_engine_runs_to_completion(memory_store, engine):
     visited = []
     
     async def generic_handler(step_name):
-        async def handler(j: Job):
+        async def handler(j: Job, engine: PipelineEngine):
             visited.append(step_name)
         return handler
         
@@ -58,10 +58,10 @@ async def test_pipeline_engine_transitions_to_failed(memory_store, engine):
     
     visited = []
     
-    async def passing_handler(j: Job):
+    async def passing_handler(j: Job, engine: PipelineEngine):
         visited.append(j.current_step)
         
-    async def failing_handler(j: Job):
+    async def failing_handler(j: Job, engine: PipelineEngine):
         visited.append(j.current_step)
         raise ValueError("Simulated pipeline failure")
 
