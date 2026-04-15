@@ -13,11 +13,12 @@ async def fetch_repo(job: Job, engine: PipelineEngine) -> None:
     # We write to `store.persistence_path.parent / "jobs" / job.id / files.json`
     
     service = CrawlerService()
-    req = CrawlerRequest(repo_url=job.repo_url, local_path=job.local_dir)
-    result = service.crawl(req)
+    req = CrawlerRequest(url=job.repo_url, local_path=job.local_dir)
+    result = service.crawl_repository(req)
     
-    if result.error:
-        raise RuntimeError(f"Crawl failed: {result.error.message}")
+    if not result.success:
+        first_error = result.errors[0].message if result.errors else "Unknown crawl error"
+        raise RuntimeError(f"Crawl failed: {first_error}")
         
     workspace_dir = engine.store.persistence_path.parent / "jobs" / job.id
     workspace_dir.mkdir(parents=True, exist_ok=True)

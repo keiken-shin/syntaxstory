@@ -177,3 +177,4 @@ pyrightconfig.json
 
 # Runtime storage of syntax — contains secrets and local config; never commit
 provider_config.json
+jobs.json
