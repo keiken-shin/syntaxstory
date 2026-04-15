@@ -86,6 +86,8 @@ async def test_analyze_relationships_missing_abstractions_fails(dummy_job, mock_
         await analyze_relationships(dummy_job, mock_engine)
 
 from app.pipeline.steps.order import order_chapters
+from app.pipeline.steps.write import write_chapters
+from app.pipeline.steps.combine import combine_tutorial
 
 @pytest.mark.anyio
 async def test_order_chapters_success(dummy_job, mock_engine):
@@ -121,4 +123,64 @@ async def test_order_chapters_success(dummy_job, mock_engine):
 async def test_order_chapters_missing_data_fails(dummy_job, mock_engine):
     with pytest.raises(ValueError, match="missing abstractions"):
         await order_chapters(dummy_job, mock_engine)
+
+@pytest.mark.anyio
+async def test_write_chapters_success(dummy_job, mock_engine, setup_dummy_files):
+    dummy_job.abstractions = {
+        "items": [
+            {
+                "name": "Stub",
+                "description": "Desc here.",
+                "files": [0, 1]
+            }
+        ]
+    }
+    dummy_job.relationships = {
+        "summary": "Project summary."
+    }
+    dummy_job.syllabus = [
+        {
+            "chapter_number": 1,
+            "abstraction_index": 0,
+            "name": "Stub"
+        }
+    ]
+
+    await write_chapters(dummy_job, mock_engine)
+
+    assert dummy_job.chapters is not None
+    assert len(dummy_job.chapters) == 1
+    chapter = dummy_job.chapters[0]
+    assert chapter.title == "Chapter 1: Stub"
+    assert chapter.description == "Desc here."
+    assert chapter.status == JobStatus.COMPLETED
+    assert "provider stub response for:" in chapter.content
+
+@pytest.mark.anyio
+async def test_write_chapters_missing_files_fails(dummy_job, mock_engine):
+    dummy_job.abstractions = {"items": [{"name": "Stub", "files": [0]}]}
+    dummy_job.relationships = {"summary": "Summ"}
+    dummy_job.syllabus = [{"chapter_number": 1, "abstraction_index": 0, "name": "Stub"}]
+    
+    with pytest.raises(FileNotFoundError):
+        await write_chapters(dummy_job, mock_engine)
+
+@pytest.mark.anyio
+async def test_combine_tutorial_success(dummy_job, mock_engine):
+    from app.pipeline.models import Chapter
+    dummy_job.chapters = [
+        Chapter(title="Chapter 1: Intro", description="Opening", content="Hello world!"),
+        Chapter(title="Chapter 2: Outro", description="Closing", content="Goodbye!")
+    ]
+    dummy_job.relationships = {"summary": "A small test project."}
+
+    await combine_tutorial(dummy_job, mock_engine)
+
+    assert dummy_job.result_path is not None
+    assert Path(dummy_job.result_path).exists()
+    
+    content = Path(dummy_job.result_path).read_text(encoding="utf-8")
+    assert "## Chapter 1: Intro" in content
+    assert "Hello world!" in content
+    assert "A small test project." in content
 
