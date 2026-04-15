@@ -26,7 +26,10 @@ class StubProvider:
         
         # If the prompt explicitly asks for yaml output structure, return a valid fake wrapper
         if "```yaml" in request.prompt:
-            if "relationships:" in request.prompt:
+            if "what is the best order to explain these abstractions" in request.prompt:
+                # Stub out Order Chapters yaml - just return 0, 1 for basic testing
+                content = '''```yaml\n- 0 # Stub Abstraction\n```'''
+            elif "relationships:" in request.prompt:
                 # Stub out relationships analysis yaml
                 content = '''```yaml\nsummary: |\n  Test stub summary.\nrelationships:\n  - from_abstraction: 0\n    to_abstraction: 0\n    label: "Uses"\n```'''
             elif "- name:" in request.prompt:

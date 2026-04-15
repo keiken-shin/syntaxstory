@@ -84,3 +84,41 @@ async def test_analyze_relationships_missing_abstractions_fails(dummy_job, mock_
     # Analyze requires identify to run first
     with pytest.raises(ValueError, match="No abstractions found"):
         await analyze_relationships(dummy_job, mock_engine)
+
+from app.pipeline.steps.order import order_chapters
+
+@pytest.mark.anyio
+async def test_order_chapters_success(dummy_job, mock_engine):
+    dummy_job.abstractions = {
+        "items": [
+            {
+                "name": "Stub Abstraction",
+                "description": "Desc here.",
+                "files": [0, 1]
+            }
+        ]
+    }
+    dummy_job.relationships = {
+        "summary": "Test stub summary.",
+        "relationships": [
+            {
+                "from_abstraction": 0,
+                "to_abstraction": 0,
+                "label": "Uses"
+            }
+        ]
+    }
+
+    await order_chapters(dummy_job, mock_engine)
+
+    assert dummy_job.syllabus is not None
+    assert len(dummy_job.syllabus) == 1
+    assert dummy_job.syllabus[0]["chapter_number"] == 1
+    assert dummy_job.syllabus[0]["abstraction_index"] == 0
+    assert dummy_job.syllabus[0]["name"] == "Stub Abstraction"
+
+@pytest.mark.anyio
+async def test_order_chapters_missing_data_fails(dummy_job, mock_engine):
+    with pytest.raises(ValueError, match="missing abstractions"):
+        await order_chapters(dummy_job, mock_engine)
+
