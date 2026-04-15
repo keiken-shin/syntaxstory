@@ -81,3 +81,4 @@ Once running, verify:
 | `GET` | `/api/config/providers/{id}` | Single provider config |
 | `PATCH` | `/api/config/provider` | Update model / base_url / api_key |
 | `PUT` | `/api/config/provider/active` | Switch the active provider |
+| `POST` | `/api/config/providers/{id}/test` | Test connectivity for a provider |

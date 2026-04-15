@@ -187,3 +187,31 @@ def test_set_active_provider_rejects_invalid_provider(client: TestClient) -> Non
         json={"active_provider": "does_not_exist"},
     )
     assert response.status_code == 422
+
+
+def test_test_provider_connection_success(client: TestClient) -> None:
+    # Gemini is enabled by default in DefaultConfigStore
+    response = client.post("/api/config/providers/gemini/test")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["provider_id"] == "gemini"
+    assert data["success"] is True
+    assert "latency_ms" in data
+    assert data["error"] is None
+
+
+def test_test_provider_connection_disabled(client: TestClient) -> None:
+    # Disable it first
+    client.patch("/api/config/provider", json={"provider_id": "gemini", "enabled": False})
+    response = client.post("/api/config/providers/gemini/test")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["provider_id"] == "gemini"
+    assert data["success"] is False
+    assert data["error"] == "Provider 'gemini' is disabled."
+
+
+def test_test_provider_connection_not_found(client: TestClient) -> None:
+    response = client.post("/api/config/providers/unknown_provider/test")
+    assert response.status_code == 422  # validation error since it's an enum, or 404
+

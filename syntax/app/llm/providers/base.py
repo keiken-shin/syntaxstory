@@ -1,7 +1,10 @@
 from enum import StrEnum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from app.config.models import ProviderConfig
 
 
 class ProviderId(StrEnum):
@@ -27,9 +30,19 @@ class GenerateResponse(BaseModel):
     content: str
 
 
+class ConnectionTestResult(BaseModel):
+    """Result of a provider connectivity probe."""
+
+    success: bool
+    latency_ms: float | None = None
+    error: str | None = None
+
+
 class LLMProvider(Protocol):
     provider_id: ProviderId
     capabilities: ProviderCapabilities
 
-    def generate(self, request: GenerateRequest) -> GenerateResponse:
-        ...
+    def generate(self, request: GenerateRequest) -> GenerateResponse: ...
+
+    def test_connection(self, config: "ProviderConfig") -> ConnectionTestResult: ...
+

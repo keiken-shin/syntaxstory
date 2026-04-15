@@ -3,10 +3,12 @@ from fastapi import APIRouter, HTTPException
 from app.config.deps import ConfigStoreDep
 from app.config.models import (
     ProviderConfigPublic,
+    ProviderTestResponse,
     RuntimeProviderConfigPublic,
     SetActiveProviderRequest,
     UpdateProviderRequest,
 )
+from app.llm.deps import ProviderRegistryDep
 from app.llm.providers.base import ProviderId
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -93,3 +95,35 @@ def set_active_provider(
 
     store.save(config)
     return RuntimeProviderConfigPublic.from_config(config)
+
+
+@router.post("/providers/{provider_id}/test", response_model=ProviderTestResponse)
+def test_provider_connection(
+    provider_id: ProviderId,
+    store: ConfigStoreDep,
+    registry: ProviderRegistryDep,
+) -> ProviderTestResponse:
+    """Test connection for a specific provider using current configuration."""
+    config = store.load()
+    if provider_id not in config.providers:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Provider '{provider_id}' not found.",
+        )
+
+    provider_cfg = config.providers[provider_id]
+
+    try:
+        provider = registry.get(provider_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    result = provider.test_connection(provider_cfg)
+
+    return ProviderTestResponse(
+        provider_id=provider_id,
+        success=result.success,
+        latency_ms=result.latency_ms,
+        error=result.error,
+    )
+

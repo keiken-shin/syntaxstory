@@ -108,3 +108,12 @@ class SetActiveProviderRequest(BaseModel):
 
     active_provider: ProviderId
     fallback_provider: ProviderId | None = None
+
+
+class ProviderTestResponse(BaseModel):
+    """Response from POST /config/providers/{provider_id}/test."""
+
+    provider_id: ProviderId
+    success: bool
+    latency_ms: float | None = None
+    error: str | None = None
