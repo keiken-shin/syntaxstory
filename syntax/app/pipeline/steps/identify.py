@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -76,7 +77,7 @@ Format the output as a YAML list of dictionaries:
     
     # 3. Call LLM
     provider = _get_active_provider(engine)
-    response = provider.generate(GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
     
     # 4. Parse output
     yaml_str = extract_yaml_from_text(response.content)

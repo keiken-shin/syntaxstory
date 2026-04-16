@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 from app.pipeline.models import Job
@@ -14,7 +15,7 @@ async def fetch_repo(job: Job, engine: PipelineEngine) -> None:
     
     service = CrawlerService()
     req = CrawlerRequest(url=job.repo_url, local_path=job.local_dir)
-    result = service.crawl_repository(req)
+    result = await asyncio.to_thread(service.crawl_repository, req)
     
     if not result.success:
         first_error = result.errors[0].message if result.errors else "Unknown crawl error"

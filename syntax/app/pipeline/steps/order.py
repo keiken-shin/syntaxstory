@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List, Any
 import yaml
@@ -82,7 +83,7 @@ Now, provide the YAML output:
 """
 
     provider = _get_active_provider(engine)
-    response = provider.generate(GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
 
     # Extraction & Parsing Validation
     yaml_str = extract_yaml_from_text(response.content)

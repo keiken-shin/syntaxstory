@@ -12,7 +12,7 @@ def _get_active_provider(engine: PipelineEngine) -> LLMProvider:
     provider = engine.provider_registry.get(config.active_provider)
     return provider
 
-def _generate_chapter_sync(
+async def _generate_chapter(
     provider: LLMProvider,
     project_name: str,
     syllabus_item: Dict[str, Any],
@@ -59,7 +59,7 @@ Explain what the abstraction stands for in the codebase and reference the provid
     import json
     from pathlib import Path
     
-    response = provider.generate(GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
     
     return chapter_num, Chapter(
         title=f"Chapter {chapter_num}: {name}",
@@ -108,8 +108,8 @@ async def write_chapters(job: Job, engine: PipelineEngine) -> None:
     # Parallel generation
     tasks = []
     for item in job.syllabus:
-        task = asyncio.to_thread(
-            _generate_chapter_sync,
+        task = _generate_chapter(
+            
             provider,
             job.project_name,
             item,
