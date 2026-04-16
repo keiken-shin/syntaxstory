@@ -7,12 +7,13 @@ from app.pipeline.models import Job
 from app.pipeline.engine import PipelineEngine
 from app.llm.parser import extract_yaml_from_text, parse_yaml_safely
 from app.llm.providers.base import GenerateRequest
+from app.llm.cache import cached_generate
 
 logger = logging.getLogger(__name__)
 
 def _get_active_provider(engine: PipelineEngine):
     config = engine.config_store.load()
-    provider = engine.provider_registry.get(config.active_provider)
+    provider = engine.provider_registry.get(config.active_provider, config.providers[config.active_provider])
     return provider
 
 async def order_chapters(job: Job, engine: PipelineEngine) -> None:
@@ -83,7 +84,7 @@ Now, provide the YAML output:
 """
 
     provider = _get_active_provider(engine)
-    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(cached_generate, provider, GenerateRequest(prompt=prompt))
 
     # Extraction & Parsing Validation
     yaml_str = extract_yaml_from_text(response.content)

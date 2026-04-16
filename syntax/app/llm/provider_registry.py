@@ -2,8 +2,10 @@ from collections.abc import Callable
 
 from app.llm.providers.base import LLMProvider, ProviderCapabilities, ProviderId
 from app.llm.providers.stub import StubProvider
+from app.llm.providers.ollama import OllamaProvider
 
-ProviderFactory = Callable[[], LLMProvider]
+from app.config.models import ProviderConfig
+ProviderFactory = Callable[[ProviderConfig], LLMProvider]
 
 
 class ProviderRegistry:
@@ -13,10 +15,10 @@ class ProviderRegistry:
     def register(self, provider_id: ProviderId, factory: ProviderFactory) -> None:
         self._providers[provider_id] = factory
 
-    def get(self, provider_id: ProviderId) -> LLMProvider:
+    def get(self, provider_id: ProviderId, config: ProviderConfig) -> LLMProvider:
         if provider_id not in self._providers:
             raise KeyError(f"Provider not registered: {provider_id}")
-        return self._providers[provider_id]()
+        return self._providers[provider_id](config)
 
     def list_registered(self) -> list[ProviderId]:
         return sorted(self._providers.keys(), key=lambda item: item.value)
@@ -27,7 +29,7 @@ def build_default_provider_registry() -> ProviderRegistry:
 
     registry.register(
         ProviderId.GEMINI,
-        lambda: StubProvider(
+        lambda config: StubProvider(
             provider_id=ProviderId.GEMINI,
             capabilities=ProviderCapabilities(
                 supports_streaming=True,
@@ -37,7 +39,7 @@ def build_default_provider_registry() -> ProviderRegistry:
     )
     registry.register(
         ProviderId.OPENAI,
-        lambda: StubProvider(
+        lambda config: StubProvider(
             provider_id=ProviderId.OPENAI,
             capabilities=ProviderCapabilities(
                 supports_streaming=True,
@@ -48,7 +50,7 @@ def build_default_provider_registry() -> ProviderRegistry:
     )
     registry.register(
         ProviderId.ANTHROPIC,
-        lambda: StubProvider(
+        lambda config: StubProvider(
             provider_id=ProviderId.ANTHROPIC,
             capabilities=ProviderCapabilities(
                 supports_streaming=True,
@@ -58,10 +60,7 @@ def build_default_provider_registry() -> ProviderRegistry:
     )
     registry.register(
         ProviderId.OLLAMA,
-        lambda: StubProvider(
-            provider_id=ProviderId.OLLAMA,
-            capabilities=ProviderCapabilities(supports_json_mode=True),
-        ),
+        lambda config: OllamaProvider(config)
     )
 
     return registry

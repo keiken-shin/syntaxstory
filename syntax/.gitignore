@@ -179,3 +179,4 @@ pyrightconfig.json
 provider_config.json
 jobs.json
 jobs/
+llm_cache.json

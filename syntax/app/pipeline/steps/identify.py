@@ -9,13 +9,14 @@ from app.pipeline.engine import PipelineEngine
 from app.llm.context import apply_context_budget
 from app.llm.parser import extract_yaml_from_text, parse_yaml_safely
 from app.llm.providers.base import GenerateRequest
+from app.llm.cache import cached_generate
 
 logger = logging.getLogger(__name__)
 
 def _get_active_provider(engine: PipelineEngine):
     """Helper to fetch the configured active LLMProvider from engine dependencies."""
     config = engine.config_store.load()
-    provider = engine.provider_registry.get(config.active_provider)
+    provider = engine.provider_registry.get(config.active_provider, config.providers[config.active_provider])
     return provider
 
 async def identify_abstractions(job: Job, engine: PipelineEngine) -> None:
@@ -77,7 +78,7 @@ Format the output as a YAML list of dictionaries:
     
     # 3. Call LLM
     provider = _get_active_provider(engine)
-    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(cached_generate, provider, GenerateRequest(prompt=prompt))
     
     # 4. Parse output
     yaml_str = extract_yaml_from_text(response.content)
@@ -88,11 +89,18 @@ Format the output as a YAML list of dictionaries:
         
     validated_abstractions = []
     for item in abstractions:
-        if not isinstance(item, dict) or not all(k in item for k in ["name", "description", "file_indices"]):
+        if not isinstance(item, dict):
+            raise ValueError(f"Missing essential keys in abstraction item: {item}")
+            
+        name = item.get("name", "")
+        desc = item.get("description", "")
+        file_idxs = item.get("file_indices") or item.get("file/indices") or item.get("files") or item.get("file indices") or item.get("indices") or []
+        
+        if not name or not desc or not isinstance(file_idxs, list):
             raise ValueError(f"Missing essential keys in abstraction item: {item}")
             
         validated_indices = []
-        for idx_entry in item["file_indices"]:
+        for idx_entry in file_idxs:
             try:
                 # LLM can sometimes return "0 # src/code.py" or just 0
                 if isinstance(idx_entry, int):
@@ -107,8 +115,8 @@ Format the output as a YAML list of dictionaries:
                 continue # Graceful skip
                 
         validated_abstractions.append({
-            "name": item["name"],
-            "description": item["description"],
+            "name": name.strip(),
+            "description": desc.strip(),
             "files": sorted(list(set(validated_indices))),
         })
 

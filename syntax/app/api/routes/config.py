@@ -114,7 +114,7 @@ def test_provider_connection(
     provider_cfg = config.providers[provider_id]
 
     try:
-        provider = registry.get(provider_id)
+        provider = registry.get(provider_id, provider_cfg)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

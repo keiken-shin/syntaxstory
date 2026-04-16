@@ -3,13 +3,14 @@ from typing import List, Dict, Any, Tuple
 
 from app.pipeline.models import Job, Chapter, JobStatus
 from app.pipeline.engine import PipelineEngine
-from app.llm.providers.base import GenerateRequest, LLMProvider
+from app.llm.providers.base import GenerateRequest
+from app.llm.cache import cached_generate, LLMProvider
 
 logger = logging.getLogger(__name__)
 
 def _get_active_provider(engine: PipelineEngine) -> LLMProvider:
     config = engine.config_store.load()
-    provider = engine.provider_registry.get(config.active_provider)
+    provider = engine.provider_registry.get(config.active_provider, config.providers[config.active_provider])
     return provider
 
 async def _generate_chapter(
@@ -39,19 +40,35 @@ async def _generate_chapter(
     file_context = "\n".join(relevant_files)
 
     prompt = f"""
-You are creating Chapter {chapter_num}: "{name}" for a tutorial about the project `{project_name}`.
+You are an expert technical writer and educator creating an engaging, story-driven tutorial for the codebase `{project_name}`.
+You are currently writing **Chapter {chapter_num}: {name}**.
 
-Abstraction Summary:
-{desc}
+### Context Provided
+**Abstraction Summary**: {desc}
+**Overall Project Architecture Summary**: {relationships.get('summary', '')}
 
-Relevant Code Context:
+**Relevant Code Context** (Use this to understand the implementation, but avoid dumping large code blocks):
 {file_context}
 
-Overall Project Summary:
-{relationships.get('summary', '')}
+### Writing Guidelines
+Your goal is to explain this technical concept to a beginner software engineer. You must NOT output a dry, jargon-filled technical document. You MUST output a highly engaging, story-like tutorial chapter that uses analogies.
 
-Write the full text for this chapter in Markdown. Make it engaging, educational, and easy to understand.
-Explain what the abstraction stands for in the codebase and reference the provided code context. Do not include a broader project introduction unless it's necessary for this specific chapter. Just focus on explaining "{name}".
+**STRICT Formatting and Section Requirements**:
+Make sure to include these specific sections in your Markdown output:
+
+1. **Introduction Header**: Begin with a `# Chapter {chapter_num}: {name}` header.
+2. **The Hook (Blockquote)**: Right under the header, write a welcoming blockquote (`>`) that hooks the reader, optionally connects to previous knowledge, and introduces what this abstraction basically is.
+3. **"🤔 What Problem Does This Solve?"**: A section explaining the *why* before the *how*. Imagine a real-world, non-technical scenario where life is hard without this abstraction, and explain how this solves it.
+4. **"🧩 How It Works (Simple Analogy)"**: A section containing a Markdown Table that explicitly maps the technical components of `{name}` to roles in your real-world analogy (e.g., Database -> The Pantry, API -> The Waiter).
+5. **"✨ What It Does (In Plain English)"**: A numbered list breaking down the core responsibilities of `{name}` into 3 or 4 simple, digestible steps. Use plain English.
+6. **"💻 Code Snapshot"**: Provide 1 (and only 1) small, beginner-friendly code snippet (max 10-15 lines) extracted or simplified from the `Relevant Code Context` that demonstrates the core idea. Explain it briefly.
+
+**Tone constraints**: 
+- Use emojis naturally to make it friendly. 
+- Act like a patient, encouraging mentor. 
+- Avoid heavy technical jargon where a simple word suffices.
+
+Now, generate the Markdown content for Chapter {chapter_num}!
 """
     
     import asyncio
@@ -59,7 +76,7 @@ Explain what the abstraction stands for in the codebase and reference the provid
     import json
     from pathlib import Path
     
-    response = await asyncio.to_thread(provider.generate, GenerateRequest(prompt=prompt))
+    response = await asyncio.to_thread(cached_generate, provider, GenerateRequest(prompt=prompt))
     
     return chapter_num, Chapter(
         title=f"Chapter {chapter_num}: {name}",

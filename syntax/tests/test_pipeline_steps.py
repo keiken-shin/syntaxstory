@@ -188,7 +188,12 @@ async def test_combine_tutorial_success(dummy_job, mock_engine):
     assert Path(dummy_job.result_path).exists()
     
     content = Path(dummy_job.result_path).read_text(encoding="utf-8")
-    assert "## Chapter 1: Intro" in content
-    assert "Hello world!" in content
+    assert "## Syllabus" in content
     assert "A small test project." in content
+    assert "graph TD" in content
+    
+    chapter_1_path = Path(dummy_job.result_path).parent / "chapter-1-chapter-1-intro.md"
+    assert chapter_1_path.exists()
+    chapter_1_content = chapter_1_path.read_text(encoding="utf-8")
+    assert "Hello world!" in chapter_1_content
 
