@@ -57,7 +57,7 @@ def test_git_crawl_success(mock_open, mock_getsize, mock_walk, mock_clone):
     mock_clone.return_value = mock_repo
     
     # Needs to match the behavior properly
-    def mock_walk_func(tmpdir):
+    def mock_walk_func(tmpdir, *args, **kwargs):
         # Using the actual received tempdir so os.path.relpath works across OS
         return [
             (tmpdir, [], ["main.py", "logo.png"])

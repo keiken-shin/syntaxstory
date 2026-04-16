@@ -11,10 +11,18 @@ from app.pipeline.steps.fetch import fetch_repo
 from app.pipeline.steps.identify import identify_abstractions
 from app.pipeline.steps.analyze import analyze_relationships
 
+from app.config.store import ProviderConfigStore
+from app.llm.provider_registry import build_default_provider_registry
+
 @pytest.fixture
 def mock_engine(tmp_path):
     store = JobStore(tmp_path / "jobs.json")
     engine = PipelineEngine(store=store)
+    
+    # Inject config dependencies just like main.py
+    engine.config_store = ProviderConfigStore(tmp_path / "provider_config_test.json")
+    engine.provider_registry = build_default_provider_registry()
+    
     return engine
 
 @pytest.fixture

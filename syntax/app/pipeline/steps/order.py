@@ -7,17 +7,11 @@ from app.pipeline.engine import PipelineEngine
 from app.llm.parser import extract_yaml_from_text, parse_yaml_safely
 from app.llm.providers.base import GenerateRequest
 
-from app.config.store import ProviderConfigStore
-from app.llm.provider_registry import build_default_provider_registry
-
 logger = logging.getLogger(__name__)
 
-def _get_active_provider():
-    """Helper to fetch the configured active LLMProvider synchronously."""
-    store = ProviderConfigStore("storage/provider_config.json")
-    config = store.load()
-    registry = build_default_provider_registry()
-    provider = registry.get(config.active_provider)
+def _get_active_provider(engine: PipelineEngine):
+    config = engine.config_store.load()
+    provider = engine.provider_registry.get(config.active_provider)
     return provider
 
 async def order_chapters(job: Job, engine: PipelineEngine) -> None:
@@ -87,7 +81,7 @@ Output the ordered list of abstraction indices, including the name in a comment 
 Now, provide the YAML output:
 """
 
-    provider = _get_active_provider()
+    provider = _get_active_provider(engine)
     response = provider.generate(GenerateRequest(prompt=prompt))
 
     # Extraction & Parsing Validation

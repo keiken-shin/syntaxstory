@@ -9,18 +9,12 @@ from app.llm.context import apply_context_budget
 from app.llm.parser import extract_yaml_from_text, parse_yaml_safely
 from app.llm.providers.base import GenerateRequest
 
-# Assuming default injection for simplicity in background tasks, we load active from store directly:
-from app.config.store import ProviderConfigStore
-from app.llm.provider_registry import build_default_provider_registry
-
 logger = logging.getLogger(__name__)
 
-def _get_active_provider():
-    """Helper to fetch the configured active LLMProvider synchronously."""
-    store = ProviderConfigStore("storage/provider_config.json")
-    config = store.load()
-    registry = build_default_provider_registry()
-    provider = registry.get(config.active_provider)
+def _get_active_provider(engine: PipelineEngine):
+    """Helper to fetch the configured active LLMProvider from engine dependencies."""
+    config = engine.config_store.load()
+    provider = engine.provider_registry.get(config.active_provider)
     return provider
 
 async def identify_abstractions(job: Job, engine: PipelineEngine) -> None:
@@ -81,7 +75,7 @@ Format the output as a YAML list of dictionaries:
 ```"""
     
     # 3. Call LLM
-    provider = _get_active_provider()
+    provider = _get_active_provider(engine)
     response = provider.generate(GenerateRequest(prompt=prompt))
     
     # 4. Parse output
