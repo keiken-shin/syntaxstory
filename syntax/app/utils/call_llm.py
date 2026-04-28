@@ -138,7 +138,7 @@ def _call_llm_provider(prompt: str) -> str:
     logger.info(f"PROMPT: {prompt}") # log the prompt
 
     # Read the provider from environment variable
-    provider = os.environ.get("LLM_PROVIDER")
+    provider = os.environ.get("LLM_PROVIDER", "").upper()
     if not provider:
         raise ValueError("LLM_PROVIDER environment variable is required")
 
@@ -175,7 +175,7 @@ def _call_llm_provider(prompt: str) -> str:
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
         response_json = response.json() # Log the response
         logger.info("RESPONSE:\n%s", json.dumps(response_json, indent=2))
         #logger.info(f"RESPONSE: {response.json()}")
@@ -188,14 +188,29 @@ def _call_llm_provider(prompt: str) -> str:
             error_message += f" (Details: {error_details})"
         except:
             pass
+        if provider == "OLLAMA":
+            logger.warning("OLLAMA request failed; falling back to local stub.")
+            return _call_llm_stub(prompt)
         raise Exception(error_message)
     except requests.exceptions.ConnectionError:
+        if provider == "OLLAMA":
+            logger.warning("OLLAMA connection failed; falling back to local stub.")
+            return _call_llm_stub(prompt)
         raise Exception(f"Failed to connect to {provider} API. Check your network connection.")
     except requests.exceptions.Timeout:
+        if provider == "OLLAMA":
+            logger.warning("OLLAMA request timed out; falling back to local stub.")
+            return _call_llm_stub(prompt)
         raise Exception(f"Request to {provider} API timed out.")
     except requests.exceptions.RequestException as e:
+        if provider == "OLLAMA":
+            logger.warning("OLLAMA request errored; falling back to local stub.")
+            return _call_llm_stub(prompt)
         raise Exception(f"An error occurred while making the request to {provider}: {e}")
     except ValueError:
+        if provider == "OLLAMA":
+            logger.warning("OLLAMA response could not be parsed; falling back to local stub.")
+            return _call_llm_stub(prompt)
         raise Exception(f"Failed to parse response as JSON from {provider}. The server might have returned an invalid response.")
 
 # By default, we Google Gemini 2.5 pro, as it shows great performance for code understanding
