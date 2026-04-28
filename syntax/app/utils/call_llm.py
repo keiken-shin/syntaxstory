@@ -4,6 +4,10 @@ import logging
 import json
 import requests
 from datetime import datetime
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env")
 
 # Configure logging
 log_directory = os.getenv("LOG_DIR", "logs")
@@ -45,10 +49,80 @@ def save_cache(cache):
 
 def get_llm_provider():
     provider = os.getenv("LLM_PROVIDER")
+    if not provider and (os.getenv("OLLAMA_MODEL") or os.getenv("OLLAMA_BASE_URL")):
+        provider = "OLLAMA"
     if not provider and (os.getenv("GEMINI_PROJECT_ID") or os.getenv("GEMINI_API_KEY")):
         provider = "GEMINI"
+    if not provider:
+        provider = "STUB"
     # if necessary, add ANTHROPIC/OPENAI
     return provider
+
+
+def _call_llm_stub(prompt: str) -> str:
+    """Deterministic local fallback for dev/test environments.
+
+    This keeps the tutorial pipeline executable without external LLM credentials.
+    """
+    if "Analyze the codebase context." in prompt:
+        file_indices = []
+        for line in prompt.splitlines():
+            line = line.strip()
+            if line.startswith("--- File Index "):
+                try:
+                    index_part = line.split("--- File Index ", 1)[1].split(":", 1)[0]
+                    file_indices.append(int(index_part.strip()))
+                except Exception:
+                    continue
+
+        chosen_indices = file_indices[:3] or [0]
+        abstractions = []
+        for offset, index in enumerate(chosen_indices):
+            abstractions.append(
+                f"- name: |\n    Abstraction {offset + 1}\n  description: |\n    A simple concept extracted from the codebase for local testing.\n  file_indices:\n    - {index} # file"
+            )
+        return "```yaml\n" + "\n".join(abstractions) + "\n```"
+
+    if "Please provide:" in prompt and "relationships:" in prompt:
+        return (
+            "```yaml\n"
+            "summary: |\n"
+            "  A small tutorial pipeline that crawls a repository, identifies abstractions, and writes chapters.\n"
+            "relationships:\n"
+            "  - from_abstraction: 0 # Abstraction 1\n"
+            "    to_abstraction: 1 # Abstraction 2\n"
+            "    label: \"Uses\"\n"
+            "  - from_abstraction: 1 # Abstraction 2\n"
+            "    to_abstraction: 2 # Abstraction 3\n"
+            "    label: \"Feeds\"\n"
+            "```"
+        )
+
+    if "what is the best order to explain these abstractions" in prompt:
+        return "```yaml\n- 0 # Abstraction 1\n- 1 # Abstraction 2\n- 2 # Abstraction 3\n```"
+
+    if "Write a very beginner-friendly tutorial chapter" in prompt:
+        heading = "# Chapter 1: Abstraction"
+        for line in prompt.splitlines():
+            if line.startswith("- Name: "):
+                heading = f"# Chapter 1: {line.split(': ', 1)[1].strip()}"
+                break
+        return (
+            f"{heading}\n\n"
+            "This chapter explains the idea in simple terms.\n\n"
+            "## What it does\n"
+            "It helps the pipeline move from crawling to chapter generation.\n"
+        )
+
+    if "Combine the tutorial chapters" in prompt or "Generate Mermaid Diagram" in prompt:
+        return (
+            "```yaml\n"
+            "summary: |\n"
+            "  This tutorial was generated using a local development stub.\n"
+            "```"
+        )
+
+    return "```yaml\nsummary: |\n  Local stub response.\n```"
 
 
 def _call_llm_provider(prompt: str) -> str:
@@ -141,6 +215,8 @@ def call_llm(prompt: str, use_cache: bool = True) -> str:
     provider = get_llm_provider()
     if provider == "GEMINI":
         response_text = _call_llm_gemini(prompt)
+    elif provider == "STUB":
+        response_text = _call_llm_stub(prompt)
     else:  # generic method using a URL that is OpenAI compatible API (Ollama, ...)
         response_text = _call_llm_provider(prompt)
 

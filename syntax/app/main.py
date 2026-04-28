@@ -3,9 +3,13 @@ from pydantic import BaseModel
 import os
 import uuid
 import asyncio
+from pathlib import Path
+from dotenv import load_dotenv
 
 # Using the references code as the core pipeline
 from .flow import create_tutorial_flow
+
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 app = FastAPI(
     title="SyntaxStory Backend",
